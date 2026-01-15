@@ -31,22 +31,32 @@
 
 ### 步骤 2：配置 Bot 自动更新
 
-在你的 **Replit Secrets** 中添加以下环境变量，Bot 启动时会自动通过 API 更新 Worker 的 `REPLIT_URL`：
+在你的 **Replit Secrets** 中添加以下 3 个环境变量，Bot 启动时会自动通过 API 更新 Worker：
 
 ```bash
 CLOUDFLARE_API_TOKEN=你的Cloudflare_API_Token
 CLOUDFLARE_ACCOUNT_ID=你的Cloudflare_Account_ID
-CLOUDFLARE_WORKER_NAME=vrchat-bot-worker（部署后的 Worker 名称）
-CLOUDFLARE_WORKER_SUBDOMAIN=你的workers.dev子域名（如 yueby-sp）
+CLOUDFLARE_WORKER_NAME=vrchat-bot-worker
 ```
 
-**如何获取这些信息：**
-- **API Token**: [创建 API Token](https://dash.cloudflare.com/profile/api-tokens) → 使用 "Edit Cloudflare Workers" 模板
-- **Account ID**: Cloudflare Dashboard 右侧边栏可以看到
-- **Worker Name**: 步骤1中部署后的 Worker 名称（如 `vrchat-bot-worker`）
-- **Subdomain**: Worker URL 中的子域名部分（`https://{name}.{subdomain}.workers.dev`）
+**如何获取：**
 
-> **💡 无需手动设置环境变量**：配置好上述 Secrets 后，Bot 启动时会自动调用 Cloudflare API 设置 Worker 的 `REPLIT_URL` 环境变量，无需在 Cloudflare Dashboard 手动操作。
+1. **API Token**: 
+   - 访问 https://dash.cloudflare.com/profile/api-tokens
+   - 点击 "Create Token" → 使用 "Edit Cloudflare Workers" 模板
+   - 复制生成的 Token
+
+2. **Account ID**: 
+   - Cloudflare Dashboard 右侧边栏可以看到
+   - 或者 Worker 页面 URL 中包含
+
+3. **Worker Name**: 
+   - 步骤1中部署时设置的名称（如 `vrchat-bot-worker`）
+
+> **💡 完全自动化**：
+> - ✅ Bot 会自动调用 API 更新 Worker 的 `REPLIT_URL` 环境变量
+> - ✅ Bot 会自动获取你的 workers.dev 子域名
+> - ✅ 无需在 Cloudflare Dashboard 手动操作任何设置
 
 ### 步骤 3：启动 Bot 测试
 
@@ -57,12 +67,10 @@ CLOUDFLARE_WORKER_SUBDOMAIN=你的workers.dev子域名（如 yueby-sp）
    [INFO] 🌐 Updating Cloudflare Worker environment variable...
    [INFO]    Current Replit URL: https://xxxxx.proxy.replit.dev
    [INFO] ✅ Cloudflare Worker updated successfully!
-   [INFO]    Worker URL: https://vrchat-bot-worker.your-subdomain.workers.dev
+   [INFO]    Worker URL: https://vrchat-bot-worker.yueby-sp.workers.dev
    ```
-4. 访问 Worker URL 测试：
-   ```
-   https://vrchat-bot-worker.your-subdomain.workers.dev/health
-   ```
+   （subdomain 会自动获取并显示）
+4. 访问日志中显示的 Worker URL 测试健康检查
 
 ### 完成！🎉
 
@@ -154,12 +162,13 @@ Bot 会在每次启动时自动完成以下操作：
 
 ### Bot 配置要求
 
-在 Replit Secrets 中需要配置以下变量（用于 API 调用）：
+在 Replit Secrets 中只需配置 3 个变量：
 
 - `CLOUDFLARE_API_TOKEN` - 用于调用 Cloudflare API
 - `CLOUDFLARE_ACCOUNT_ID` - 你的 Cloudflare 账户 ID
 - `CLOUDFLARE_WORKER_NAME` - Worker 名称（如 `vrchat-bot-worker`）
-- `CLOUDFLARE_WORKER_SUBDOMAIN` - Workers.dev 子域名（用于日志显示）
+
+> **💡 自动获取 Subdomain**：Bot 会通过 API 自动获取你的 workers.dev 子域名并显示完整的 Worker URL，无需手动配置。
 
 ### 环境变量（Worker）
 
@@ -221,9 +230,9 @@ A: Cloudflare Workers 免费版限制：
 - 每次请求最多 10ms CPU 时间
 - 对于小型 Bot 完全够用
 
-### Q: 如何查看我的 workers.dev 子域名？
+### Q: 如何查看我的 Worker URL？
 
-A: 在 Cloudflare Dashboard → Worker → Triggers 中查看，URL 格式为：`{worker-name}.{subdomain}.workers.dev`
+A: Bot 启动时会自动获取 subdomain 并在日志中显示完整的 Worker URL。或者在 Cloudflare Dashboard → Worker → Triggers 中查看。
 
 ## 📝 文件说明
 
