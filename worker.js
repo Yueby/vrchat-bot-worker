@@ -14,10 +14,45 @@ const CACHE_DURATION = 60000; // 1 分钟缓存
 
 export default {
   async fetch(request, env, ctx) {
-    // 从环境变量获取 Replit URL（Bot 自动更新）
+    const url = new URL(request.url);
+    
+    // 特殊端点：更新 Worker 的 Replit URL
+    if (url.pathname === '/__update_url') {
+      const newUrl = url.searchParams.get('url');
+      if (newUrl && (newUrl.startsWith('https://') || newUrl.startsWith('http://'))) {
+        cachedReplitUrl = newUrl;
+        lastFetchTime = Date.now();
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'URL updated successfully',
+          url: newUrl,
+          timestamp: new Date().toISOString()
+        }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      } else {
+        return new Response(JSON.stringify({
+          error: 'Invalid URL',
+          message: 'Please provide a valid URL in the ?url parameter',
+          timestamp: new Date().toISOString()
+        }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+    }
+    
+    // 从环境变量获取 Replit URL
     let REPLIT_URL = env.REPLIT_URL || null;
     
-    // 如果环境变量未设置，尝试从备用端点获取（双重保障）
+    // 如果环境变量未设置，尝试从缓存或查询获取
     if (!REPLIT_URL || REPLIT_URL === 'https://placeholder.proxy.replit.dev') {
       const now = Date.now();
       
@@ -29,7 +64,8 @@ export default {
         try {
           const response = await fetch(`${cachedReplitUrl}/__replit_url`, {
             method: 'GET',
-            headers: { 'Accept': 'application/json' }
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(5000) // 5秒超时
           });
           
           if (response.ok) {
@@ -38,17 +74,18 @@ export default {
             lastFetchTime = now;
             REPLIT_URL = cachedReplitUrl;
           } else {
-            REPLIT_URL = cachedReplitUrl; // 使用缓存
+            REPLIT_URL = cachedReplitUrl; // 使用旧缓存
           }
         } catch (error) {
-          console.error('Failed to fetch latest URL:', error);
-          REPLIT_URL = cachedReplitUrl; // 使用缓存
+          console.error('Failed to fetch latest URL, using cached:', error);
+          REPLIT_URL = cachedReplitUrl; // 使用旧缓存
         }
       } else {
         // 完全没有 URL 可用
         return new Response(JSON.stringify({
           error: 'Configuration Error',
-          message: 'REPLIT_URL not configured. Please set the environment variable in Cloudflare Worker settings.',
+          message: 'Worker not initialized. Please visit: https://<worker-url>/__update_url?url=<your-replit-url>',
+          example: `https://${url.hostname}/__update_url?url=https://your-bot.proxy.replit.dev`,
           timestamp: new Date().toISOString()
         }), {
           status: 503,
@@ -59,13 +96,14 @@ export default {
         });
       }
     } else {
-      // 如果有有效的环境变量，缓存它（用于备用）
-      cachedReplitUrl = REPLIT_URL;
-      lastFetchTime = Date.now();
+      // 如果有有效的环境变量，缓存它
+      if (!cachedReplitUrl || cachedReplitUrl !== REPLIT_URL) {
+        cachedReplitUrl = REPLIT_URL;
+        lastFetchTime = Date.now();
+      }
     }
     
     // 构建目标 URL
-    const url = new URL(request.url);
     const targetUrl = new URL(url.pathname + url.search, REPLIT_URL);
     
     // 处理 OPTIONS 预检请求（CORS）
