@@ -3,7 +3,7 @@
 # 文档: https://developers.cloudflare.com/workers/wrangler/configuration/
 
 # Worker 名称（修改为你的 Worker 名称）
-name = "vrchat-bot-proxy"
+name = "vrchat-bot-worker"
 
 # Worker 入口文件
 main = "worker.js"
