@@ -1,0 +1,32 @@
+# Cloudflare Workers 配置文件
+# 用于通过 Wrangler CLI 或 GitHub Pages 部署
+# 文档: https://developers.cloudflare.com/workers/wrangler/configuration/
+
+# Worker 名称（修改为你的 Worker 名称）
+name = "vrchat-bot-proxy"
+
+# Worker 入口文件
+main = "worker.js"
+
+# 兼容性日期（使用最新的 API）
+compatibility_date = "2026-01-15"
+
+# 启用 workers.dev 子域名
+workers_dev = true
+
+# 环境变量（可选，也可以在 Dashboard 中设置）
+# [vars]
+# REPLIT_URL = "https://your-repl.proxy.replit.dev"
+
+# 如果需要绑定自定义域名，取消下面的注释并修改
+# [[routes]]
+# pattern = "api.yourdomain.com/*"
+# zone_name = "yourdomain.com"
+
+# 生产环境配置（可选）
+# [env.production]
+# name = "vrchat-bot-proxy-prod"
+# workers_dev = false
+# [[env.production.routes]]
+# pattern = "api.yourdomain.com/*"
+# zone_name = "yourdomain.com"
