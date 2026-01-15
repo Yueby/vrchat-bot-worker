@@ -19,55 +19,56 @@
 2. 进入 **Workers & Pages** → 点击右上角 **Create Application**
 3. 在 "Ship something new" 页面，点击 **Continue with GitHub**
 4. 授权 Cloudflare 访问你的 GitHub（如果是第一次）
-5. 选择**本项目的 GitHub 仓库**（如 `vrchat-sponser-bot`）
-6. 在 "Set up builds and deployments" 页面配置：
-   - **Project name**: 自定义名称（如 `vrchat-bot-proxy`）
-   - **Production branch**: `main`
-   - **Framework preset**: None
-   - **Root directory (path)**: `cloudflare-worker` ⚠️ **重要！**
-   - **Build command**: 留空
-   - **Build output directory**: 留空
-7. 点击 **Save and Deploy**
+5. 选择仓库 **`Yueby/vrchat-bot-worker`**
+6. 在 "Set up your application" 配置页面：
+   - **项目名称**：保持默认 `vrchat-bot-worker` 或自定义
+   - **构建命令**：留空（可选）
+   - **部署命令**：自动填充为 `npx wrangler deploy` ✅
+   - **生产分支**：`main`（默认）
+7. 点击右下角蓝色的 **"部署"** 或 **"Save and Deploy"** 按钮
 
-> **💡 提示**：设置 **Root directory** 为 `cloudflare-worker` 非常重要，这样 Cloudflare 才能找到 `wrangler.toml` 配置文件并正确部署 Worker。
+> **💡 提示**：Cloudflare 会自动检测仓库中的 `wrangler.toml` 配置文件并填充部署命令，无需手动设置。
 
-### 步骤 2：配置 Bot 自动更新（推荐）
+### 步骤 2：配置 Bot 自动更新
 
-在你的 **Replit Secrets** 中添加以下环境变量，Bot 启动时会自动更新 Worker 的 `REPLIT_URL`：
+在你的 **Replit Secrets** 中添加以下环境变量，Bot 启动时会自动通过 API 更新 Worker 的 `REPLIT_URL`：
 
 ```bash
 CLOUDFLARE_API_TOKEN=你的Cloudflare_API_Token
 CLOUDFLARE_ACCOUNT_ID=你的Cloudflare_Account_ID
-CLOUDFLARE_WORKER_NAME=worker名称（与步骤1中部署的名称一致）
+CLOUDFLARE_WORKER_NAME=vrchat-bot-worker（部署后的 Worker 名称）
 CLOUDFLARE_WORKER_SUBDOMAIN=你的workers.dev子域名（如 yueby-sp）
 ```
 
 **如何获取这些信息：**
 - **API Token**: [创建 API Token](https://dash.cloudflare.com/profile/api-tokens) → 使用 "Edit Cloudflare Workers" 模板
 - **Account ID**: Cloudflare Dashboard 右侧边栏可以看到
-- **Worker Name**: 步骤1中部署后的 Worker 名称
+- **Worker Name**: 步骤1中部署后的 Worker 名称（如 `vrchat-bot-worker`）
 - **Subdomain**: Worker URL 中的子域名部分（`https://{name}.{subdomain}.workers.dev`）
 
-### 步骤 3：启动 Bot 并验证
+> **💡 无需手动设置环境变量**：配置好上述 Secrets 后，Bot 启动时会自动调用 Cloudflare API 设置 Worker 的 `REPLIT_URL` 环境变量，无需在 Cloudflare Dashboard 手动操作。
+
+### 步骤 3：启动 Bot 测试
 
 1. 在 Replit 启动 Bot
-2. 查看日志，应该看到：
+2. Bot 会自动检测 Replit URL 并调用 Cloudflare API 更新 Worker
+3. 查看日志，应该看到：
    ```
    [INFO] 🌐 Updating Cloudflare Worker environment variable...
    [INFO]    Current Replit URL: https://xxxxx.proxy.replit.dev
    [INFO] ✅ Cloudflare Worker updated successfully!
-   [INFO]    Worker URL: https://worker-name.subdomain.workers.dev
+   [INFO]    Worker URL: https://vrchat-bot-worker.your-subdomain.workers.dev
    ```
-3. 访问 Worker URL 测试：
+4. 访问 Worker URL 测试：
    ```
-   https://your-worker.your-subdomain.workers.dev/health
+   https://vrchat-bot-worker.your-subdomain.workers.dev/health
    ```
 
-### 完成！
+### 完成！🎉
 
 ✅ **代码自动部署**：推送代码到 GitHub，Cloudflare 自动重新部署  
-✅ **URL 自动更新**：Bot 启动时自动调用 Cloudflare API 更新 Worker 环境变量  
-✅ **双重保障**：如果 API 更新失败，Worker 还能从 `/__replit_url` 端点查询  
+✅ **URL 完全自动**：Bot 启动时自动通过 API 更新，无需任何手动操作  
+✅ **双重保障**：API 更新失败时，Worker 自动从 `/__replit_url` 端点查询  
 ✅ **零维护成本**：配置一次，永久自动运行
 
 ## 📖 工作原理
@@ -140,27 +141,29 @@ if (request.result == UnityWebRequest.Result.Success) {
 }
 ```
 
-## 🔧 配置说明
+## 🔧 工作原理
 
-### 环境变量
+### 自动化流程
 
-- **REPLIT_URL** (必需)
-  - 类型：Text
-  - 说明：Bot 的当前 Replit URL
-  - 示例：`https://xxxxx.proxy.replit.dev`
-  - 设置位置：Cloudflare Dashboard → Worker → Settings → Variables
+Bot 会在每次启动时自动完成以下操作：
 
-### Bot 配置说明
+1. **检测 Replit URL**：从 `REPLIT_DEV_DOMAIN` 环境变量获取当前 URL
+2. **调用 Cloudflare API**：使用配置的 API Token 更新 Worker 的 `REPLIT_URL` 环境变量
+3. **立即生效**：Worker 收到更新后立即使用新 URL 转发请求
+4. **备用机制**：如果 API 更新失败，Worker 自动从 `/__replit_url` 端点查询
 
-Bot 会在启动时自动调用 Cloudflare API 更新 Worker 的 `REPLIT_URL` 环境变量，确保 Worker 始终指向最新的 Replit URL。
+### Bot 配置要求
 
-**工作流程：**
-1. Bot 在 Replit 启动
-2. 检测当前 Replit URL（从 `REPLIT_DEV_DOMAIN` 环境变量）
-3. 调用 Cloudflare API 更新 Worker 的 `REPLIT_URL` 环境变量
-4. Worker 立即使用最新的 URL 转发请求
+在 Replit Secrets 中需要配置以下变量（用于 API 调用）：
 
-如果 API 更新失败（如配置缺失），Worker 会回退到从 `/__replit_url` 端点动态查询的备用机制。
+- `CLOUDFLARE_API_TOKEN` - 用于调用 Cloudflare API
+- `CLOUDFLARE_ACCOUNT_ID` - 你的 Cloudflare 账户 ID
+- `CLOUDFLARE_WORKER_NAME` - Worker 名称（如 `vrchat-bot-worker`）
+- `CLOUDFLARE_WORKER_SUBDOMAIN` - Workers.dev 子域名（用于日志显示）
+
+### 环境变量（Worker）
+
+Worker 的 `REPLIT_URL` 环境变量**完全由 Bot 自动管理**，无需在 Cloudflare Dashboard 手动设置。
 
 ## 📊 监控与调试
 
@@ -187,6 +190,10 @@ curl -I https://your-worker.your-subdomain.workers.dev/health
 
 ## ❓ 常见问题
 
+### Q: 需要在 Cloudflare 手动设置 REPLIT_URL 吗？
+
+A: **不需要！**Bot 会完全自动管理这个环境变量。只需在 Replit Secrets 配置好 API Token 等信息，Bot 启动时会自动调用 Cloudflare API 设置 Worker 的 `REPLIT_URL`。
+
 ### Q: REPLIT_URL 会自动更新吗？
 
 A: 是的！Bot 每次启动时会自动调用 Cloudflare API 更新 Worker 的环境变量。如果 API 更新失败，Worker 还有备用机制从 `/__replit_url` 端点查询，确保始终能获取到最新 URL。
@@ -197,11 +204,11 @@ A: Bot 启动时立即更新（通过 Cloudflare API 秒级生效）。即使 AP
 
 ### Q: Worker 返回 503 错误怎么办？
 
-A: 检查以下几点：
-1. **确认 Bot 已启动**：Bot 启动时会自动更新 Worker
-2. **检查 Bot 日志**：查看是否显示 "✅ Cloudflare Worker updated successfully!"
-3. **验证 API 配置**：确认 Replit Secrets 中的 Cloudflare API 配置正确
-4. **检查 Bot URL**：确认 Replit Bot 正在运行且可访问
+A: 503 错误表示 Worker 无法获取 Replit URL。检查以下几点：
+1. **首次使用**：第一次部署后，必须启动一次 Bot 让它更新 Worker 的环境变量
+2. **检查 Bot 日志**：确认看到 "✅ Cloudflare Worker updated successfully!"
+3. **验证 API 配置**：确认 Replit Secrets 中的 4 个 Cloudflare 配置正确
+4. **确认 Bot 运行**：Bot 必须正在运行且可访问
 
 ### Q: 可以绑定自定义域名吗？
 
