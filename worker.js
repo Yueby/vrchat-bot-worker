@@ -84,8 +84,14 @@ export default {
         // 完全没有 URL 可用
         return new Response(JSON.stringify({
           error: 'Configuration Error',
-          message: 'Worker not initialized. Please visit: https://<worker-url>/__update_url?url=<your-replit-url>',
-          example: `https://${url.hostname}/__update_url?url=https://your-bot.proxy.replit.dev`,
+          message: 'Worker not initialized. Bot should push URL on startup.',
+          hint: 'Start your Replit Bot, it will automatically initialize the Worker.',
+          manual_init: `If needed, visit: https://${url.hostname}/__update_url?url=<your-replit-url>`,
+          cache_status: {
+            has_cache: !!cachedReplitUrl,
+            cache_value: cachedReplitUrl || 'null',
+            cache_age_seconds: cachedReplitUrl ? Math.floor((Date.now() - lastFetchTime) / 1000) : 0
+          },
           timestamp: new Date().toISOString()
         }), {
           status: 503,
