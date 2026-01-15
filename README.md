@@ -153,29 +153,30 @@ if (request.result == UnityWebRequest.Result.Success) {
 
 ## 🔧 工作原理
 
-### 智能查询机制（推荐用于 GitHub 部署）
+### 主动推送机制（完全自动 🎉）
 
-这是为 **GitHub 自动部署** 设计的完全自动化方案：
+Bot 启动时会**主动通知** Worker 最新 URL，无需任何手动操作：
 
 ```
 1. Replit Bot 启动
      ↓
-2. Bot 检测当前 URL 并提供 /__replit_url 端点
+2. Bot 检测当前 URL
      ↓
-3. 用户访问 Worker URL
+3. Bot 调用 Worker 的 /__update_url 端点
      ↓
-4. Worker 从 Bot 的 /__replit_url 端点查询最新 URL
+4. Worker 更新内部缓存
      ↓
-5. Worker 缓存 URL（1分钟）并转发请求
-     ↓
-6. 所有请求正常工作 ✅
+5. 所有请求立即使用新 URL ✅
 ```
 
-**优势：**
-- ✅ **完全自动**：Replit URL 变化时，Worker 自动获取新 URL
-- ✅ **实时更新**：无需重新部署 Worker
-- ✅ **零配置**：Worker 无需任何环境变量
-- ✅ **兼容 GitHub 部署**：适用于通过 GitHub 集成部署的 Worker
+**特性：**
+- ✅ **完全自动**：Bot 每次启动都会主动推送新 URL
+- ✅ **即时生效**：无需等待缓存过期
+- ✅ **零手动操作**：无需在 Dashboard 设置任何东西
+- ✅ **兼容 GitHub 部署**：完美适配 GitHub 集成部署
+
+**备用机制：**
+如果主动推送失败，Worker 还会从 Bot 的 `/__replit_url` 端点查询最新 URL（双重保障）。
 
 ### Bot 配置（可选）
 
