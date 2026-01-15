@@ -12,3 +12,9 @@ compatibility_date = "2026-01-15"
 
 # 启用 workers.dev 子域名
 workers_dev = true
+
+# KV 命名空间（可选，用于跨实例共享 URL）
+# 如需启用，取消下面的注释并在 Cloudflare Dashboard 创建 KV 命名空间
+# [[kv_namespaces]]
+# binding = "CONFIG"
+# id = "your-kv-namespace-id"

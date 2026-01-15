@@ -1,113 +1,32 @@
 /**
- * Cloudflare Worker - VRChat Bot 自动代理
+ * Cloudflare Worker - VRChat Bot 反向代理
  * 
  * 工作机制：
  * 1. Bot 启动时自动调用 Cloudflare API 更新 REPLIT_URL 环境变量
- * 2. Worker 读取最新的 REPLIT_URL 并转发所有请求
- * 3. 备用：如果环境变量未设置，尝试从 /__replit_url 端点获取
+ * 2. Worker 读取 REPLIT_URL 并转发所有请求
  */
-
-// URL 缓存（用于备用查询机制）
-let cachedReplitUrl = null;
-let lastFetchTime = 0;
-const CACHE_DURATION = 60000; // 1 分钟缓存
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    
-    // 特殊端点：更新 Worker 的 Replit URL
-    if (url.pathname === '/__update_url') {
-      const newUrl = url.searchParams.get('url');
-      if (newUrl && (newUrl.startsWith('https://') || newUrl.startsWith('http://'))) {
-        cachedReplitUrl = newUrl;
-        lastFetchTime = Date.now();
-        return new Response(JSON.stringify({
-          success: true,
-          message: 'URL updated successfully',
-          url: newUrl,
-          timestamp: new Date().toISOString()
-        }), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
-      } else {
-        return new Response(JSON.stringify({
-          error: 'Invalid URL',
-          message: 'Please provide a valid URL in the ?url parameter',
-          timestamp: new Date().toISOString()
-        }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
-      }
-    }
-    
     // 从环境变量获取 Replit URL
-    let REPLIT_URL = env.REPLIT_URL || null;
+    const REPLIT_URL = env.REPLIT_URL;
     
-    // 如果环境变量未设置，尝试从缓存或查询获取
-    if (!REPLIT_URL || REPLIT_URL === 'https://placeholder.proxy.replit.dev') {
-      const now = Date.now();
-      
-      // 检查缓存
-      if (cachedReplitUrl && (now - lastFetchTime) < CACHE_DURATION) {
-        REPLIT_URL = cachedReplitUrl;
-      } else if (cachedReplitUrl) {
-        // 尝试从备用端点获取最新 URL
-        try {
-          const response = await fetch(`${cachedReplitUrl}/__replit_url`, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            signal: AbortSignal.timeout(5000) // 5秒超时
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            cachedReplitUrl = data.url;
-            lastFetchTime = now;
-            REPLIT_URL = cachedReplitUrl;
-          } else {
-            REPLIT_URL = cachedReplitUrl; // 使用旧缓存
-          }
-        } catch (error) {
-          console.error('Failed to fetch latest URL, using cached:', error);
-          REPLIT_URL = cachedReplitUrl; // 使用旧缓存
+    // 检查是否配置了 REPLIT_URL
+    if (!REPLIT_URL) {
+      return new Response(JSON.stringify({
+        error: 'Configuration Error',
+        message: 'REPLIT_URL not configured. Please set the environment variable in Worker settings or run your Bot to auto-update.',
+        timestamp: new Date().toISOString()
+      }), {
+        status: 503,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
         }
-      } else {
-        // 完全没有 URL 可用
-        return new Response(JSON.stringify({
-          error: 'Configuration Error',
-          message: 'Worker not initialized. Bot should push URL on startup.',
-          hint: 'Start your Replit Bot, it will automatically initialize the Worker.',
-          manual_init: `If needed, visit: https://${url.hostname}/__update_url?url=<your-replit-url>`,
-          cache_status: {
-            has_cache: !!cachedReplitUrl,
-            cache_value: cachedReplitUrl || 'null',
-            cache_age_seconds: cachedReplitUrl ? Math.floor((Date.now() - lastFetchTime) / 1000) : 0
-          },
-          timestamp: new Date().toISOString()
-        }), {
-          status: 503,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
-      }
-    } else {
-      // 如果有有效的环境变量，缓存它
-      if (!cachedReplitUrl || cachedReplitUrl !== REPLIT_URL) {
-        cachedReplitUrl = REPLIT_URL;
-        lastFetchTime = Date.now();
-      }
+      });
     }
+    
+    const url = new URL(request.url);
     
     // 构建目标 URL
     const targetUrl = new URL(url.pathname + url.search, REPLIT_URL);
