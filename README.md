@@ -67,12 +67,18 @@ CLOUDFLARE_WORKER_NAME=vrchat-bot-worker
    [INFO]    Current Replit URL: https://xxxxx.proxy.replit.dev
    [INFO] ✅ Worker URL detected!
    [INFO]    🌐 Worker URL: https://vrchat-bot-worker.yueby-sp.workers.dev
+   [INFO] ✅ Worker URL updated successfully!
    [INFO]    📊 API Endpoint: https://vrchat-bot-worker.yueby-sp.workers.dev/api/vrchat/sponsors/YOUR_GUILD_ID
    [INFO]    ❤️ Health Check: https://vrchat-bot-worker.yueby-sp.workers.dev/health
-   [INFO] 💡 Worker will automatically fetch latest URL from: https://xxxxx.proxy.replit.dev/__replit_url
    ```
-3. 访问日志中显示的 Health Check URL 测试
-4. Worker 会自动从 Bot 获取最新 URL 并转发请求
+3. **首次部署**：手动访问一次以快速初始化（可选）
+   ```
+   https://vrchat-bot-worker.yueby-sp.workers.dev/__update_url?url=你的replit-url
+   ```
+   （Bot 日志中会显示完整的 Replit URL）
+4. 访问 Health Check URL 测试
+
+> **💡 关于 Worker 实例**：Cloudflare Workers 运行在多个全球实例中。Bot 推送的 URL 会逐步同步到所有实例（1-2分钟）。如果首次访问返回 503，可以手动初始化或等待片刻重试。
 
 ### 完成！🎉
 
