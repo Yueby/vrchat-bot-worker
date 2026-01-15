@@ -1,0 +1,14 @@
+# Cloudflare Workers 配置文件
+# 文档: https://developers.cloudflare.com/workers/wrangler/configuration/
+
+# Worker 名称
+name = "vrchat-bot-worker"
+
+# Worker 入口文件
+main = "worker.js"
+
+# 兼容性日期
+compatibility_date = "2026-01-15"
+
+# 启用 workers.dev 子域名
+workers_dev = true
